@@ -1,6 +1,9 @@
 name: Update Homebrew Formula
 
 on:
+  push:
+    tags:
+      - 'update-*'
   repository_dispatch:
     types: [new_release]
   workflow_dispatch:
@@ -27,6 +30,10 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             VERSION="${{ inputs.version }}"
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/update-* ]]; then
+            # Extract version from tag name (update-3.1.0 -> 3.1.0)
+            VERSION="${{ github.ref_name }}"
+            VERSION=${VERSION#update-}
           else
             # Get from repository dispatch payload
             VERSION="${{ github.event.client_payload.version }}"
