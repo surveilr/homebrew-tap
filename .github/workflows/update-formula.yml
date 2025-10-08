@@ -1,0 +1,90 @@
+name: Update Homebrew Formula
+
+on:
+  repository_dispatch:
+    types: [new_release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to update to (e.g., 3.1.0)'
+        required: true
+        type: string
+
+jobs:
+  update-formula:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Get latest release info
+        id: release
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            # Get from repository dispatch payload
+            VERSION="${{ github.event.client_payload.version }}"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Updating formula for version: $VERSION"
+          
+          # Download the macOS binary to calculate SHA256
+          wget -q "https://github.com/surveilr/packages/releases/download/${VERSION}/surveilr_${VERSION}_x86_64-apple-darwin.zip" -O surveilr.zip
+          SHA256=$(shasum -a 256 surveilr.zip | awk '{print $1}')
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "🔐 SHA256: $SHA256"
+          
+      - name: Update formula
+        run: |
+          VERSION="${{ steps.release.outputs.version }}"
+          SHA256="${{ steps.release.outputs.sha256 }}"
+          
+          # Update the formula file
+          cat > Formula/surveilr.rb << EOF
+          class Surveilr < Formula
+            desc "Resource surveillance and monitoring tool"
+            homepage "https://surveilr.com"
+            url "https://github.com/surveilr/packages/releases/download/${VERSION}/surveilr_${VERSION}_x86_64-apple-darwin.zip"
+            sha256 "${SHA256}"
+            version "${VERSION}"
+            
+            def install
+              bin.install "surveilr"
+            end
+            
+            test do
+              system "#{bin}/surveilr", "--version"
+            end
+          end
+          EOF
+          
+          echo "✅ Updated formula to version $VERSION"
+          
+      - name: Commit and push changes
+        run: |
+          VERSION="${{ steps.release.outputs.version }}"
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add Formula/surveilr.rb
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          git commit -m "Update surveilr formula to version ${VERSION}
+
+          🤖 Automated update via GitHub Actions"
+          
+          git push
+          
+          echo "🚀 Successfully updated and pushed formula for version $VERSION"
