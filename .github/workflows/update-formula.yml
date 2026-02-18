@@ -38,41 +38,57 @@ jobs:
             # Get from repository dispatch payload
             VERSION="${{ github.event.client_payload.version }}"
           fi
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Updating formula for version: $VERSION"
-          
+
           # Download the macOS binary to calculate SHA256
-          wget -q "https://github.com/surveilr/packages/releases/download/${VERSION}/surveilr_${VERSION}_x86_64-apple-darwin.zip" -O surveilr.zip
-          SHA256=$(shasum -a 256 surveilr.zip | awk '{print $1}')
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
-          echo "🔐 SHA256: $SHA256"
+          wget -q "https://github.com/surveilr/packages/releases/download/${VERSION}/surveilr_${VERSION}_x86_64-apple-darwin.zip" -O surveilr-macos.zip
+          MACOS_SHA256=$(shasum -a 256 surveilr-macos.zip | awk '{print $1}')
+          echo "macos_sha256=$MACOS_SHA256" >> $GITHUB_OUTPUT
+          echo "🔐 macOS SHA256: $MACOS_SHA256"
+
+          # Download the Linux binary to calculate SHA256
+          wget -q "https://github.com/surveilr/packages/releases/download/${VERSION}/surveilr_${VERSION}_x86_64-unknown-linux-gnu.tar.gz" -O surveilr-linux.tar.gz
+          LINUX_SHA256=$(shasum -a 256 surveilr-linux.tar.gz | awk '{print $1}')
+          echo "linux_sha256=$LINUX_SHA256" >> $GITHUB_OUTPUT
+          echo "🔐 Linux SHA256: $LINUX_SHA256"
           
       - name: Update formula
         run: |
           VERSION="${{ steps.release.outputs.version }}"
-          SHA256="${{ steps.release.outputs.sha256 }}"
-          
-          # Update the formula file
+          MACOS_SHA256="${{ steps.release.outputs.macos_sha256 }}"
+          LINUX_SHA256="${{ steps.release.outputs.linux_sha256 }}"
+
+          # Update the formula file with multi-platform support
           cat > Formula/surveilr.rb << EOF
           class Surveilr < Formula
             desc "Resource surveillance and monitoring tool"
             homepage "https://surveilr.com"
-            url "https://github.com/surveilr/packages/releases/download/${VERSION}/surveilr_${VERSION}_x86_64-apple-darwin.zip"
-            sha256 "${SHA256}"
             version "${VERSION}"
-            
+            license "MIT"
+
+            on_macos do
+              url "https://github.com/surveilr/packages/releases/download/${VERSION}/surveilr_${VERSION}_x86_64-apple-darwin.zip"
+              sha256 "${MACOS_SHA256}"
+            end
+
+            on_linux do
+              url "https://github.com/surveilr/packages/releases/download/${VERSION}/surveilr_${VERSION}_x86_64-unknown-linux-gnu.tar.gz"
+              sha256 "${LINUX_SHA256}"
+            end
+
             def install
               bin.install "surveilr"
             end
-            
+
             test do
               system "#{bin}/surveilr", "--version"
             end
           end
           EOF
-          
-          echo "✅ Updated formula to version $VERSION"
+
+          echo "✅ Updated formula to version $VERSION with macOS and Linux support"
           
       - name: Commit and push changes
         run: |
