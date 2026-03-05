@@ -39,6 +39,9 @@ jobs:
             VERSION="${{ github.event.client_payload.version }}"
           fi
 
+          # Strip 'v' prefix if present (v3.37.0 -> 3.37.0)
+          VERSION=${VERSION#v}
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Updating formula for version: $VERSION"
 
