@@ -1,17 +1,17 @@
 class Surveilr < Formula
   desc "Resource surveillance and monitoring tool"
   homepage "https://surveilr.com"
-  version "3.47.0"
+  version "3.48.0"
   license "MIT"
 
   on_macos do
-    url "https://github.com/surveilr/packages/releases/download/3.47.0/surveilr_3.47.0_x86_64-apple-darwin.zip"
-    sha256 "c8c597baf1d25e1194f70d28230ac872ef69d5ca08e15058e86b4ae1a736d4c1"
+    url "https://github.com/surveilr/packages/releases/download/3.48.0/surveilr_3.48.0_x86_64-apple-darwin.zip"
+    sha256 "be64d26be94ecaa63ac3ef8566d3361c55447383afdb2ab857c553e9396e9940"
   end
 
   on_linux do
-    url "https://github.com/surveilr/packages/releases/download/3.47.0/surveilr_3.47.0_x86_64-unknown-linux-gnu.tar.gz"
-    sha256 "6744114995d3f5d331d3501b107f4b9335bcfe8f8098778fb11c0a4fa6dc1915"
+    url "https://github.com/surveilr/packages/releases/download/3.48.0/surveilr_3.48.0_x86_64-unknown-linux-gnu.tar.gz"
+    sha256 "563567a1621b493a7eecb35507b57bdffdd4bfc23a919a33286e796e18abc8f1"
   end
 
   def install
